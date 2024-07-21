@@ -1,0 +1,134 @@
+switchname s2-nxos-leaf-1
+
+cfs eth distribute
+feature ospf
+feature bgp
+feature interface-vlan
+feature hsrp
+feature lacp
+feature vpc
+feature lldp
+
+username admin password C1scoUC$  role network-admin
+ip domain-lookup
+copp profile lenient
+
+system default switchport
+
+vlan 1,1201-1202
+vlan 1201
+  name data-1201
+vlan 1202
+  name data-1202
+
+vrf context keepalive
+  address-family ipv4 unicast
+vrf context management
+  ip route 0.0.0.0/0 192.168.22.1
+vpc domain 700
+  peer-switch
+  role priority 150
+  peer-keepalive destination 3.3.3.2 source 3.3.3.1 vrf keepalive
+  delay restore 240
+  peer-gateway
+  auto-recovery reload-delay 300
+  delay restore interface-vlan 240
+  ip arp synchronize
+
+interface Vlan1
+  no ip redirects
+  no ipv6 redirects
+
+interface Vlan1201
+  no shutdown
+  no ip redirects
+  ip address 192.168.221.252/24
+  no ipv6 redirects
+  hsrp version 2
+  hsrp 1001 
+    priority 150
+    ip 192.168.221.254
+
+interface Vlan1202
+  no shutdown
+  no ip redirects
+  ip address 192.168.222.252/24
+  no ipv6 redirects
+  hsrp version 2
+  hsrp 1001 
+    priority 150
+    ip 192.168.222.254
+
+interface port-channel49
+  switchport mode trunk
+  switchport trunk allowed vlan 1,1201-1202
+  spanning-tree port type edge trunk
+  no lacp graceful-convergence
+  lacp vpc-convergence
+  vpc 49
+
+interface port-channel50
+  switchport mode trunk
+  switchport trunk allowed vlan 1,1201-1202
+  spanning-tree port type edge trunk
+  no lacp graceful-convergence
+  lacp vpc-convergence
+  vpc 50
+
+interface port-channel149
+  description vpc-peer-link
+  switchport mode trunk
+  spanning-tree port type network
+  vpc peer-link
+
+interface Ethernet1/1
+  switchport mode trunk
+  channel-group 149 mode active
+
+interface Ethernet1/2
+  switchport mode trunk
+  channel-group 149 mode active
+
+interface Ethernet1/3
+  no switchport
+  vrf member keepalive
+  ip address 3.3.3.1/24
+  no shutdown
+
+
+interface Ethernet1/49
+  switchport mode trunk
+  switchport trunk allowed vlan 1,1201-1202
+  channel-group 49 mode active
+
+interface Ethernet1/50
+  switchport mode trunk
+  switchport trunk allowed vlan 1,1201-1202
+  channel-group 50 mode active
+
+interface Ethernet1/51
+  description --> BB1 e1/26
+  no switchport
+  ip address dhcp
+  ipv6 address dhcp
+  no shutdown
+
+interface Ethernet1/52
+  shutdown
+
+interface Ethernet1/53
+
+interface Ethernet1/54
+
+interface mgmt0
+  vrf member management
+  ip address 192.168.22.62/24
+  ipv6 address fdbd:100::5/64
+  
+vrf context management
+  ip route 0.0.0.0/0 192.168.22.1
+  ipv6 route 0::/0 fdbd:100::1
+
+cli alias name wr copy run start
+cli alias name q exit
+cli alias name cls clear screen
